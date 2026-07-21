@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ecosystem Events | Calendar &amp; Map | 2026-2027</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+  :root{--ink:#1f2023;--ink2:#5f6065;--line:#e3e2dd;--page:#f7f6f2;--card:#ffffff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--page);color:var(--ink);padding:24px 16px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;margin-bottom:4px}
+  .sub{font-size:13px;color:var(--ink2);margin-bottom:14px;max-width:960px}
+  button{font:inherit;cursor:pointer}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tab{border:1px solid var(--line);background:var(--card);border-radius:8px 8px 0 0;padding:8px 20px;font-size:14px;color:var(--ink2);border-bottom:2px solid transparent}
+  .tab.on{color:var(--ink);font-weight:600;border-bottom:2px solid var(--ink)}
+  .navbtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:14px}
+  .navbtn:disabled{opacity:.35;cursor:default}
+  .mtitle{font-size:17px;font-weight:600;min-width:170px;text-align:center}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .fgroup{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+  .flabel{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin-right:2px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font-size:12px;color:var(--ink2)}
+  .chip.on{color:#fff;border-color:transparent;background:var(--chipc,#5F5E5A)}
+  .minibtn{font-size:11px;color:var(--ink2);background:none;border:none;text-decoration:underline;padding:2px 4px}
+  .count{font-size:12px;color:var(--ink2);margin:0 0 8px 2px}
+  .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+  .dow{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);text-align:center;padding:4px 0}
+  .day{background:var(--card);border:1px solid var(--line);border-radius:8px;min-height:96px;padding:4px;font-size:12px}
+  .day.blank{background:transparent;border-color:transparent}
+  .dnum{font-size:11px;color:var(--ink2);margin-bottom:3px}
+  .ev{display:block;width:100%;text-align:left;border:none;border-left:4px solid;border-radius:4px;padding:3px 5px;margin-bottom:3px;font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ev.cat-host{border-left-style:solid}
+  .ev.cat-att{border-left-style:double}
+  .ev.cat-int{border-left-style:dotted}
+  .tray{margin-top:14px;background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+  .tray h3{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink2)}
+  .tray .ev{display:inline-block;width:auto;margin:0 6px 4px 0;max-width:100%}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;font-size:12px;color:var(--ink2);align-items:center}
+  .lg{display:flex;align-items:center;gap:5px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .lgb{width:20px;height:12px;display:inline-block;border-left:4px solid #5F5E5A;background:#eee;border-radius:2px}
+  .maps{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:920px){.maps{grid-template-columns:1.55fr 1fr}}
+  .mapcard{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .mapcard h4{font-size:12px;font-weight:600;color:var(--ink2);padding:8px 12px 0}
+  .mapsvg{display:block;width:100%;height:auto}
+  .mapnote{font-size:12px;color:var(--ink2);margin-top:8px}
+  #citypanel{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:none}
+  #citypanel h3{font-size:15px;font-weight:600;margin-bottom:8px}
+  .cityev{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+  .cityev .dtag{color:var(--ink2);font-size:12px;min-width:170px}
+  .obadge{display:inline-block;font-size:10px;font-weight:600;border-radius:999px;padding:1px 8px;color:#fff}
+  .modalbg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .modalbg.open{display:flex}
+  .modal{background:#fff;border-radius:12px;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;padding:20px 22px}
+  .modal h2{font-size:17px;font-weight:600;margin-bottom:2px;padding-right:28px}
+  .badge{display:inline-block;font-size:11px;font-weight:600;border-radius:999px;padding:2px 10px;margin:6px 6px 10px 0}
+  .modal table{width:100%;border-collapse:collapse;font-size:13px}
+  .modal td{padding:5px 0;vertical-align:top;border-top:1px solid var(--line)}
+  .modal td:first-child{color:var(--ink2);width:130px;padding-right:10px}
+  .note{margin-top:10px;font-size:12.5px;color:var(--ink2);background:var(--page);border-radius:8px;padding:8px 10px}
+  .flagn{margin-top:8px;font-size:12px;color:#933;background:#FCEBEB;border-radius:8px;padding:6px 10px}
+  .xbtn{float:right;border:none;background:none;font-size:20px;color:var(--ink2);line-height:1}
+  @media(max-width:640px){.day{min-height:70px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Medtech ecosystem events</h1>
+  <div class="sub">Aug 2026 to June 2027. Seven organizations. Colour = organization; left-border style = category (solid Hosting, double Attending, dotted Of interest). Same-org events listed in both source sheets are merged; cross-org overlaps are kept so you can spot duplication. Click any event or map marker for details. A red flag marks entries with a date/location discrepancy in the source data.</div>
+  <div class="tabs">
+    <button class="tab on" id="tab-cal">Calendar</button>
+    <button class="tab" id="tab-map">Map</button>
+  </div>
+  <div class="filters" id="filters"></div>
+  <div style="margin-bottom:12px"><button class="minibtn" id="only-canada">Canada only</button> &middot; <button class="minibtn" id="reset-filters">Reset filters</button></div>
+  <div id="view-cal">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+      <button class="navbtn" id="prev">&#8592; Prev</button>
+      <span class="mtitle" id="mtitle"></span>
+      <button class="navbtn" id="next">Next &#8594;</button>
+      <span class="count" id="count" style="margin:0"></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="tray" id="tray" style="display:none"></div>
+    <div class="tray" id="undated" style="display:none"></div>
+  </div>
+  <div id="view-map" style="display:none">
+    <div class="maps">
+      <div class="mapcard"><h4>World</h4><svg id="mapsvg" viewBox="0 0 640 380" class="mapsvg" role="img" aria-label="World map of event locations, circles sized by event count"></svg></div>
+      <div class="mapcard"><h4>Canada (inset)</h4><svg id="mapsvg-ca" viewBox="0 0 420 380" class="mapsvg" role="img" aria-label="Canada inset map of event locations, circles sized by event count"></svg></div>
+    </div>
+    <div class="mapnote" id="mapnote"></div>
+    <div id="citypanel"></div>
+  </div>
+  <div class="legend" id="legend"></div>
+</div>
+<div class="modalbg" id="modalbg"><div class="modal" id="modal"></div></div>
+<script>
+var ORDER=["INOVAIT","CABHI","Medtech Canada","Life Sciences Ontario","OBIO","CAN Health Network","MaRS"];
+var PAL=[
+ {main:"#534AB7",bg:"#EEEDFE",text:"#3C3489"},
+ {main:"#0F6E56",bg:"#E1F5EE",text:"#085041"},
+ {main:"#D85A30",bg:"#FAECE7",text:"#712B13"},
+ {main:"#185FA5",bg:"#E6F1FB",text:"#0C447C"},
+ {main:"#993556",bg:"#FBEAF0",text:"#72243E"},
+ {main:"#BA7517",bg:"#FAEEDA",text:"#633806"},
+ {main:"#639922",bg:"#EAF3DE",text:"#27500A"}
+];
+var EXTRA=[{main:"#5F5E5A",bg:"#F1EFE8",text:"#444441"},{main:"#0F6E8C",bg:"#E1F0F5",text:"#08414F"}];
+var ORGS={};
+function orgC(o){if(!ORGS[o]){var i=ORDER.indexOf(o);ORGS[o]=(i>=0&&i<PAL.length)?PAL[i]:(EXTRA.length?EXTRA.shift():{main:"#5F5E5A",bg:"#F1EFE8",text:"#444441"});}return ORGS[o];}
+var CITY={"Toronto":[43.653,-79.383,1],"Montreal":[45.501,-73.567,1],"Ottawa":[45.421,-75.697,1],"Edmonton":[53.546,-113.494,1],"Vancouver":[49.283,-123.121,1],"Fredericton":[45.963,-66.643,1],"Saint-Hyacinthe":[45.628,-72.957,1],"St. John's":[47.561,-52.713,1],"Halifax":[44.649,-63.575,1],"Burlington":[43.326,-79.799,1],"Oakville":[43.467,-79.687,1],"Brampton":[43.731,-79.762,1],"Niagara":[43.09,-79.075,1],"Calgary":[51.045,-114.058,1],"Winnipeg":[49.895,-97.138,1],"Quebec City":[46.813,-71.208,1],"Victoria":[48.428,-123.365,1],"Boston":[42.36,-71.059,0],"Las Vegas":[36.17,-115.14,0],"San Francisco":[37.775,-122.419,0],"Nashville":[36.163,-86.781,0],"Dana Point":[33.467,-117.698,0],"Chicago":[41.878,-87.63,0],"Washington, DC":[38.907,-77.037,0],"Los Angeles":[34.052,-118.244,0],"Raleigh":[35.78,-78.639,0],"London, UK":[51.507,-0.128,0],"Barcelona":[41.387,2.17,0],"Bilbao":[43.263,-2.935,0],"Dublin":[53.35,-6.26,0],"Dubai":[25.205,55.271,0],"Yokohama":[35.444,139.638,0],"Tokyo":[35.676,139.65,0],"Singapore":[1.352,103.82,0],"Brussels":[50.851,4.352,0],"Cologne":[50.938,6.96,0],"Dusseldorf":[51.228,6.773,0],"Rome":[41.902,12.496,0],"Malta":[35.899,14.514,0]};
+var E=[{"n":"Medventions: Orientation and Kick-off","org":"INOVAIT","cat":"host","s":"2026-09-01","e":"2026-09-01","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Identifying Unmet Clinical Needs","org":"INOVAIT","cat":"host","s":"2026-09-08","e":"2026-09-08","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: The Medtech Innovation Ecosystem in Canada","org":"INOVAIT","cat":"host","s":"2026-09-15","e":"2026-09-15","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Innovation Mindsets & Entrepreneurial Thinking","org":"INOVAIT","cat":"host","s":"2026-09-22","e":"2026-09-22","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Market Research & Opportunity Sizing","org":"INOVAIT","cat":"host","s":"2026-09-29","e":"2026-09-29","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Human-Centered Design & Ideation","org":"INOVAIT","cat":"host","s":"2026-10-06","e":"2026-10-06","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Intellectual Property Strategy & Patent Search","org":"INOVAIT","cat":"host","s":"2026-10-13","e":"2026-10-13","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Value Proposition, Business Models & Early Pitching","org":"INOVAIT","cat":"host","s":"2026-10-20","e":"2026-10-20","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Regulatory Strategy & Device Classification","org":"INOVAIT","cat":"host","s":"2026-10-27","e":"2026-10-27","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: R&D, Risk Management & Clinical Strategy","org":"INOVAIT","cat":"host","s":"2026-11-03","e":"2026-11-03","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Reimbursement & Health Economics","org":"INOVAIT","cat":"host","s":"2026-11-10","e":"2026-11-10","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Venture Finance & Funding Models","org":"INOVAIT","cat":"host","s":"2026-11-17","e":"2026-11-17","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Marketing, Sales & Go-To-Market Strategy","org":"INOVAIT","cat":"host","s":"2026-11-24","e":"2026-11-24","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions: Final Venture Pitch Presentations & Feedback","org":"INOVAIT","cat":"host","s":"2026-12-01","e":"2026-12-01","time":"16:30 - 19:00","loc":"Toronto / Hybrid","city":"Toronto","sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Operator's Field Guide: Fractional Executives: Senior Leadership Without the Full-Time Cost","org":"INOVAIT","cat":"host","s":"2026-09-16","e":"2026-09-16","time":"12:00 - 13:00","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Operator's Field Guide: How to Prepare for Your First Meeting with the FDA","org":"INOVAIT","cat":"host","s":"2026-10-28","e":"2026-10-28","time":"12:00 - 13:00","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Operator's Field Guide: Health Economics Validation Studies","org":"INOVAIT","cat":"host","s":"2026-11-18","e":"2026-11-18","time":"12:00 - 13:00","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Operator's Field Guide: Canadian Procurement and Adoption (RFx and GPOs)","org":"INOVAIT","cat":"host","s":"2026-12-09","e":"2026-12-09","time":"12:00 - 13:00","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Operator's Field Guide: Preparing Your First Sales Pitch to U.S. Hospitals","org":"INOVAIT","cat":"host","s":"2027-01-13","e":"2027-01-13","time":"12:00 - 13:00","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Medventions Toronto Innovation Day","org":"INOVAIT","cat":"host","s":"2027-06-15","e":"2027-06-15","time":"Full day","loc":"Toronto","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"Health Data Event (placeholder): health data access & interoperability","org":"INOVAIT","cat":"host","tbd":["2027-02","2027-03"],"dl":"February / March 2027 (date TBD)","time":"Full day","loc":"Vancouver","city":"Vancouver","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"LSI: USA","org":"INOVAIT","cat":"att","tbd":["2027-03"],"dl":"March 2027 (one week, dates TBD)","loc":"Dana Point","city":"Dana Point","sc":"International","ser":"Standalone","note":"Anchor event.","src":"Hosting/Attending"},{"n":"StarFish Medical Device Playbook Toronto","org":"INOVAIT","cat":"att","s":"2026-11-05","e":"2026-11-05","time":"Full day","loc":"Toronto","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"Innovation Investment Summit (BDC, CSA, GAIN)","org":"INOVAIT","cat":"att","s":"2026-09-18","e":"2026-09-18","time":"16:00 - 19:00","loc":"Toronto","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"ProCURE: Canada's HealthTech Procurement Summit","org":"INOVAIT","cat":"att","tbd":["2026-10"],"dl":"October 2026 (dates TBD), two days","loc":"St. John's","city":"St. John's","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"RSNA Annual Meeting (Radiological Society of North America)","org":"INOVAIT","cat":"att","s":"2026-11-29","e":"2026-12-02","dl":"November 29 - December 2, 2026","loc":"Chicago","city":"Chicago","sc":"International","ser":"Standalone","src":"Hosting/Attending"},{"n":"RESI","org":"INOVAIT","cat":"int","il":"Slightly interested","s":"2026-09-22","e":"2026-09-22","loc":"Boston, MA, USA","city":"Boston","sc":"International","ser":"Standalone","note":"Attended RESI around JPM in California in January.","src":"Events of Interest"},{"n":"ALL IN","org":"INOVAIT","cat":"int","il":"Slightly interested","s":"2026-09-16","e":"2026-09-17","loc":"Montreal, QC","city":"Montreal","sc":"International","ser":"Standalone","note":"Attended and hosted a press conference last year.","src":"Events of Interest"},{"n":"LSI: Europe","org":"INOVAIT","cat":"int","il":"Very interested","s":"2026-09-28","e":"2026-10-01","loc":"Barcelona, Spain","city":"Barcelona","sc":"International","ser":"Standalone","note":"Canadian Trade Commissioner office is at Biospain (Bilbao) at the same time and cannot support a delegation this year.","src":"Events of Interest"},{"n":"The MedTech Conference","org":"INOVAIT","cat":"int","il":"Very interested","s":"2026-10-18","e":"2026-10-21","loc":"Boston, MA, USA","city":"Boston","sc":"International","ser":"Standalone","note":"Exploring bulk tickets, possibly a booth (6 companies interested, ~2 more needed).","src":"Events of Interest"},{"n":"Medtech Strategist Innovation Summit","org":"INOVAIT","cat":"int","il":"Very interested","s":"2027-04-28","e":"2027-04-30","loc":"Dublin, Ireland","city":"Dublin","sc":"International","ser":"Standalone","note":"Great event for early-stage medtech to pitch European investors/strategics.","src":"Events of Interest"},{"n":"World Health Expo (formerly Arab Health)","org":"INOVAIT","cat":"int","il":"Very interested","s":"2027-01-25","e":"2027-01-28","loc":"Dubai, UAE","city":"Dubai","sc":"International","ser":"Standalone","note":"Massive conference; requires a coordinated delegation for maximum impact.","src":"Events of Interest"},{"n":"Medtech Malta","org":"INOVAIT","cat":"int","il":"Not interested","undated":true,"dl":"No date listed","loc":"Malta","city":"Malta","sc":"International","ser":"Standalone","note":"Did not live up to the hype; seen as a competitor to LSI Europe.","src":"Events of Interest"},{"n":"MEDICA","org":"INOVAIT","cat":"int","il":"Not interested","undated":true,"dl":"No date listed","loc":"Germany","city":"Dusseldorf","sc":"International","ser":"Standalone","note":"Broad device tradeshow; not a place to meet investors. (Note: OBIO is attending MEDICA.)","src":"Events of Interest"},{"n":"Invest in BC w/ Lumira Ventures (Life Sciences BC)","org":"INOVAIT","cat":"int","il":"Slightly interested","s":"2026-11-03","e":"2026-11-04","loc":"Vancouver, BC","city":"Vancouver","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"MedTech CAN x Sant\u00e9 Qu\u00e9bec: Healthcare Collaboration Exchange","org":"INOVAIT","cat":"int","il":"Interested","s":"2026-11-23","e":"2026-11-23","loc":"Saint-Hyacinthe, QC","city":"Saint-Hyacinthe","sc":"Provincial","ser":"Standalone","note":"Hosted by Medtech Canada (see their Hosting entry same day).","src":"Events of Interest"},{"n":"Canada Investment Summit","org":"INOVAIT","cat":"int","il":"Very interested","s":"2026-09-14","e":"2026-09-15","loc":"Toronto, ON","city":"Toronto","sc":"International","ser":"Standalone","note":"Mark Carney's Infrastructure Investment Summit, co-hosted with CPP.","src":"Events of Interest"},{"n":"Society of Interventional Radiology","org":"INOVAIT","cat":"int","il":"Slightly interested","s":"2027-03-20","e":"2027-03-24","dl":"March 20-24 (sheet says 2026; likely 2027, adjoins LSI)","loc":"Los Angeles, CA","city":"Los Angeles","sc":"International","ser":"Standalone","note":"Adjoins LSI; interested in spotlighting innovations, discussed booth options.","src":"Events of Interest","flag":true},{"n":"AAIC","org":"CABHI","cat":"int","il":"Very interested","s":"2026-07-11","e":"2026-07-14","loc":"London, UK","city":"London, UK","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"KMb Forum","org":"CABHI","cat":"int","il":"Very interested","s":"2026-07-28","e":"2026-07-30","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Elevate","org":"CABHI","cat":"int","il":"Very interested","s":"2026-09-22","e":"2026-09-24","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Lab2Market Summit","org":"CABHI","cat":"int","il":"Very interested","s":"2026-09-23","e":"2026-09-25","loc":"Edmonton, AB","city":"Edmonton","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"AARP AgeTech Collaborative Summit","org":"CABHI","cat":"int","il":"Very interested","s":"2026-09-28","e":"2026-09-29","loc":"Washington, DC","city":"Washington, DC","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"BioJapan","org":"CABHI","cat":"int","il":"Very interested","s":"2026-10-07","e":"2026-10-09","loc":"Yokohama, Japan","city":"Yokohama","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"World Aging Conference","org":"CABHI","cat":"int","il":"Very interested","s":"2026-10-08","e":"2026-10-10","loc":"Tokyo, Japan","city":"Tokyo","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"Symposium on Aging","org":"CABHI","cat":"int","il":"Very interested","s":"2026-10-12","e":"2026-10-13","loc":"Singapore","city":"Singapore","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"AGE-WELL Conference","org":"CABHI","cat":"int","il":"Very interested","s":"2026-11-02","e":"2026-11-04","loc":"Ottawa, ON","city":"Ottawa","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"HLTH","org":"CABHI","cat":"int","il":"Very interested","s":"2026-11-15","e":"2026-11-18","loc":"Las Vegas, USA","city":"Las Vegas","sc":"International","ser":"Standalone","src":"Events of Interest","note":"MaRS + CABHI delegation likely attending (see MaRS 'Las Vegas health conference')."},{"n":"Brain Innovation Days","org":"CABHI","cat":"int","il":"Slightly interested","s":"2026-11-18","e":"2026-11-19","loc":"Brussels, Belgium","city":"Brussels","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"Research Health Symposium (Research NB)","org":"CABHI","cat":"int","il":"Very interested","s":"2026-11-20","e":"2026-11-21","loc":"Fredericton, NB","city":"Fredericton","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Canadian Science Policy Centre (CSPC)","org":"CABHI","cat":"int","il":"Very interested","s":"2026-11-25","e":"2026-11-27","loc":"Ottawa, ON","city":"Ottawa","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"CES","org":"CABHI","cat":"int","il":"Very interested","s":"2027-01-06","e":"2027-01-09","loc":"Las Vegas, USA","city":"Las Vegas","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"JPM","org":"CABHI","cat":"int","il":"Interested","s":"2027-01-11","e":"2027-01-14","loc":"SF, USA","city":"San Francisco","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"VIVE","org":"CABHI","cat":"int","il":"Slightly interested","s":"2027-03-14","e":"2027-03-17","loc":"Nashville, USA","city":"Nashville","sc":"International","ser":"Standalone","src":"Events of Interest","dl":"March 14-17, 2027 (sheet lists 'March 14, 17, 2027')"},{"n":"LSI USA","org":"CABHI","cat":"int","il":"Slightly interested","s":"2027-03-15","e":"2027-03-19","loc":"Dana Point, USA","city":"Dana Point","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"Regulatory, Quality and Environmental","org":"Medtech Canada","cat":"host","s":"2027-04-07","e":"2027-04-08","dl":"April 7-8, 2027 (H/A sheet says 2026; Interest sheet says 2027)","loc":"Ottawa, ON","city":"Ottawa","sc":"National","ser":"Standalone","src":"Hosting/Attending","flag":true},{"n":"Medtech Canada Conference","org":"Medtech Canada","cat":"host","s":"2027-06-02","e":"2027-06-02","time":"Full day","loc":"Oakville, ON","city":"Oakville","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"Healthcare Collaboration Exchange 2026","org":"Medtech Canada","cat":"host","s":"2026-11-23","e":"2026-11-23","time":"Full day","loc":"Saint-Hyacinthe, QC","city":"Saint-Hyacinthe","sc":"National","ser":"Standalone","note":"Same event INOVAIT lists as 'MedTech CAN x Sant\u00e9 Qu\u00e9bec' (interest).","src":"Hosting/Attending"},{"n":"RAPS Convergence 2026","org":"Medtech Canada","cat":"int","s":"2026-09-15","e":"2026-09-17","loc":"North Carolina, USA","city":"Raleigh","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"International Medical Device Regulators Forum (IMDRF)","org":"Medtech Canada","cat":"int","s":"2026-09-14","e":"2026-09-18","loc":"Singapore","city":"Singapore","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"Canadian Chamber of Commerce 2026 Health Data Summit","org":"Medtech Canada","cat":"int","s":"2026-09-22","e":"2026-09-22","loc":"TBD","city":null,"sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"BioPort Atlantic","org":"Medtech Canada","cat":"int","s":"2026-09-22","e":"2026-09-24","loc":"Halifax, NS","city":"Halifax","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"NGBi26","org":"Medtech Canada","cat":"int","s":"2026-09-28","e":"2026-09-29","loc":"Burlington, ON","city":"Burlington","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"CCHL Canada West Health Leaders Conference","org":"Medtech Canada","cat":"int","s":"2026-10-19","e":"2026-10-21","loc":"Calgary, AB","city":"Calgary","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"AdvaMed's The MedTech Conference","org":"Medtech Canada","cat":"int","s":"2026-10-18","e":"2026-10-21","loc":"Boston, USA","city":"Boston","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"CAN Health Network Annual Conference","org":"Medtech Canada","cat":"int","s":"2026-10-27","e":"2026-10-28","loc":"TBD","city":null,"sc":"National","ser":"Standalone","src":"Events of Interest","note":"Same event CAN Health Network is hosting (Oct 27-28)."},{"n":"19th Annual Home Care Ontario Conference / Symposium","org":"Medtech Canada","cat":"int","s":"2026-11-02","e":"2026-11-02","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"2026 Infoway Partnership Conference","org":"Medtech Canada","cat":"int","s":"2026-11-17","e":"2026-11-18","loc":"Vancouver, BC","city":"Vancouver","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"Forum de l'industrie de la sant\u00e9 du Qu\u00e9bec","org":"Medtech Canada","cat":"int","s":"2026-11-24","e":"2026-11-25","loc":"Quebec City","city":"Quebec City","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"CAPRA 2026 Annual Symposium","org":"Medtech Canada","cat":"int","s":"2026-12-01","e":"2026-12-02","loc":"Toronto, ON","city":"Toronto","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"BMO CEO Luncheon (invitation only)","org":"Medtech Canada","cat":"int","s":"2027-01-27","e":"2027-01-27","loc":"Toronto, ON","city":"Toronto","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"11th Annual Access to Innovation Forum","org":"Medtech Canada","cat":"int","tbd":["2027-02"],"dl":"February 2027 (date TBD)","loc":"Vancouver, BC","city":"Vancouver","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Bio Alberta Policy Forum","org":"Medtech Canada","cat":"int","tbd":["2027-03"],"dl":"March 2027 (date TBD)","loc":"Edmonton, AB","city":"Edmonton","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Bio Manitoba Life Sciences Policy Summit","org":"Medtech Canada","cat":"int","tbd":["2027-03"],"dl":"March 2027 (date TBD)","loc":"Winnipeg, MB","city":"Winnipeg","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Reboot Communications 26th Annual Healthcare Summit","org":"Medtech Canada","cat":"int","tbd":["2027-05"],"dl":"May 2027 (date TBD)","loc":"Vancouver, BC","city":"Vancouver","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"Inventures 2027 (may not run - confirm)","org":"Medtech Canada","cat":"int","tbd":["2027-05"],"dl":"May 2027 (date TBD)","loc":"Calgary, AB","city":"Calgary","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"MDSAP Forum","org":"Medtech Canada","cat":"int","tbd":["2027-06"],"dl":"June 2027 (typical; host country TBD, Japan in 2026)","loc":"Japan","city":"Tokyo","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"2027 MedTech Forum","org":"Medtech Canada","cat":"int","s":"2027-05-18","e":"2027-05-20","loc":"Rome, Italy","city":"Rome","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"AQLASS Annual Conference","org":"Medtech Canada","cat":"int","tbd":["2027-06"],"dl":"Mid-June 2027","loc":"Quebec City","city":"Quebec City","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Life Sciences BC Showcase Series: Vancouver Island","org":"Medtech Canada","cat":"int","tbd":["2027-03","2027-04"],"dl":"March or April 2027 (date TBD)","loc":"Victoria, BC","city":"Victoria","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Bio Alberta Health and Life Sciences Showcase 2027","org":"Medtech Canada","cat":"int","undated":true,"dl":"2027 (date TBD)","loc":"Calgary, AB","city":"Calgary","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Manitoba Public Procurement Showcase 2027","org":"Medtech Canada","cat":"int","undated":true,"dl":"2027 (date TBD)","loc":"Winnipeg, MB","city":"Winnipeg","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"Procure 2026","org":"Medtech Canada","cat":"int","undated":true,"dl":"2026 (date TBD)","loc":"Maritimes (TBD)","city":null,"sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"7th European Value-Based Procurement Conference","org":"Medtech Canada","cat":"int","undated":true,"dl":"2027 (date TBD)","loc":"Brussels, Belgium","city":"Brussels","sc":"International","ser":"Standalone","src":"Events of Interest"},{"n":"LSO Annual Golf Tournament","org":"Life Sciences Ontario","cat":"host","s":"2026-08-12","e":"2026-08-12","time":"Full day","loc":"Lionhead Golf Club, Brampton ON","city":"Brampton","sc":"Provincial","ser":"Standalone","note":"2nd-largest LSO event.","src":"Hosting/Attending"},{"n":"LSO Executive Retreat (invitation only)","org":"Life Sciences Ontario","cat":"host","s":"2026-09-02","e":"2026-09-03","loc":"Niagara, ON","city":"Niagara","sc":"Provincial","ser":"Standalone","note":"20-25 CEOs/GMs; Sylvia Jones speaking. Embargoed.","src":"Hosting/Attending"},{"n":"LSO Annual Ideas to Action Life Sciences Forum (17th year)","org":"Life Sciences Ontario","cat":"host","s":"2026-09-15","e":"2026-09-15","time":"Full day","loc":"Arcadian Court, Toronto ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Hosting/Attending"},{"n":"NGBi26 - Next Great Big Ideas, Canada's Life Sciences Summit","org":"Life Sciences Ontario","cat":"host","s":"2026-09-28","e":"2026-09-29","loc":"Burlington, ON","city":"Burlington","sc":"National","ser":"Standalone","note":"Medtech Canada also lists this as an event of interest.","src":"Hosting/Attending"},{"n":"Deputy Minister panel","org":"Life Sciences Ontario","cat":"host","tbd":["2026-11"],"dl":"November 2026 (date TBC)","loc":"TBD","city":null,"sc":"Provincial","ser":"Standalone","note":"Andy to share date + location. Embargoed.","src":"Hosting/Attending"},{"n":"Year-end wrap-up breakfast forums","org":"Life Sciences Ontario","cat":"host","tbd":["2026-12"],"dl":"December 2026","loc":"Ontario (TBD)","city":null,"sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Monthly breakfast sessions","org":"Life Sciences Ontario","cat":"host","undated":true,"dl":"Monthly (ongoing)","loc":"Ontario (TBD)","city":null,"sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Cross-province roadshow (virtual + in-person stops)","org":"Life Sciences Ontario","cat":"host","undated":true,"dl":"Dates TBD","loc":"Ontario (multi-stop)","city":null,"sc":"Provincial","ser":"Series","src":"Hosting/Attending"},{"n":"Event at vacant lot (purpose unclear - follow up)","org":"Life Sciences Ontario","cat":"int","s":"2026-10-22","e":"2026-10-22","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Events of Interest"},{"n":"WiHI (Women in Health Innovation) breakfast series","org":"OBIO","cat":"host","tbd":["2026-09"],"dl":"September 2026","loc":"Ontario (TBD)","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"OBIO EGM / AGM","org":"OBIO","cat":"host","s":"2026-09-17","e":"2026-09-17","loc":"TBD (Toronto likely)","city":"Toronto","sc":"National","ser":"Standalone","note":"Announcements to follow. Embargoed.","src":"Hosting/Attending"},{"n":"OBIO event at Sunnybrook (first time; name TBC)","org":"OBIO","cat":"host","tbd":["2026-10"],"dl":"October 2026 (TBC)","loc":"Sunnybrook, Toronto ON","city":"Toronto","sc":"Provincial","ser":"Standalone","note":"Embargoed.","src":"Hosting/Attending"},{"n":"OBIO satellite event timed to Canada Investment Summit","org":"OBIO","cat":"host","tbd":["2026-09"],"dl":"Aligns with Canada Investment Summit (mid-Sep 2026)","loc":"TBD","city":null,"sc":"Provincial","ser":"Standalone","src":"Hosting/Attending"},{"n":"OBIO Investment Summit (OIS)","org":"OBIO","cat":"host","tbd":["2027-02"],"dl":"February 2027 (date TBC)","loc":"Arcadian Court, Toronto ON","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"BioPort Atlantic (25th anniversary; 300+ attendees)","org":"OBIO","cat":"att","s":"2026-09-22","e":"2026-09-24","loc":"Halifax Convention Centre, Halifax NS","city":"Halifax","sc":"Provincial","ser":"Standalone","note":"Medtech Canada also lists BioPort Atlantic (interest).","src":"Hosting/Attending"},{"n":"Bio-Spain","org":"OBIO","cat":"att","s":"2026-09-28","e":"2026-10-01","loc":"Bilbao, Spain","city":"Bilbao","sc":"International","ser":"Standalone","note":"Overlaps LSI Europe (INOVAIT).","src":"Hosting/Attending"},{"n":"BIO-Europe (32nd annual; 8,000+ attendees)","org":"OBIO","cat":"att","s":"2026-11-09","e":"2026-11-11","loc":"Koelnmesse, Cologne, Germany","city":"Cologne","sc":"International","ser":"Standalone","src":"Hosting/Attending"},{"n":"London Life Sciences Week","org":"OBIO","cat":"att","s":"2026-11-15","e":"2026-11-19","loc":"London, UK","city":"London, UK","sc":"International","ser":"Standalone","note":"Co-branded delegation TBD.","src":"Hosting/Attending"},{"n":"MEDICA (attending ~2 days; 5,000+ exhibitors)","org":"OBIO","cat":"att","s":"2026-11-16","e":"2026-11-19","loc":"Dusseldorf, Germany","city":"Dusseldorf","sc":"International","ser":"Standalone","note":"INOVAIT lists MEDICA as 'not interested'.","src":"Hosting/Attending"},{"n":"Health Tech World Summit (European partnerships)","org":"OBIO","cat":"att","undated":true,"dl":"2027 (TBC)","loc":"TBD","city":null,"sc":"International","ser":"Standalone","src":"Hosting/Attending"},{"n":"BioNation","org":"OBIO","cat":"int","s":"2026-09-22","e":"2026-09-22","loc":"Ottawa, ON","city":"Ottawa","sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"CAN Health Network Annual Conference","org":"CAN Health Network","cat":"host","s":"2026-10-27","e":"2026-10-28","loc":"Oakville, ON (one row says Toronto)","city":"Oakville","sc":"National","ser":"Standalone","note":"Day 1 operators, Day 2 both. Anchor. Medtech Canada also lists it (interest).","src":"Hosting/Attending","flag":true},{"n":"Frontlines and Founders","org":"CAN Health Network","cat":"host","tbd":["2026-11"],"dl":"November 2026","loc":"TBD","city":null,"sc":"National","ser":"Standalone","src":"Hosting/Attending"},{"n":"Webinars (primarily for operators)","org":"CAN Health Network","cat":"host","undated":true,"dl":"Ongoing","loc":"Virtual","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Additional event (separate from Oct 27-28 annual conference)","org":"CAN Health Network","cat":"int","s":"2026-10-06","e":"2026-10-06","loc":"TBD","city":null,"sc":"National","ser":"Standalone","src":"Events of Interest"},{"n":"Company valuation workshop","org":"MaRS","cat":"host","s":"2026-08-24","e":"2026-08-24","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Hosting/Attending"},{"n":"Mobility Unlimited Hub - 3rd cohort (accessibility + rehab medtech)","org":"MaRS","cat":"host","tbd":["2026-08"],"dl":"Applications close Aug 2026","loc":"n/a (cohort program)","city":null,"sc":"National","ser":"Series","src":"Hosting/Attending"},{"n":"Portfolio companies showcase","org":"MaRS","cat":"host","tbd":["2026-09"],"dl":"Sep 14 or 24, 2026 (TBC)","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Hosting/Attending"},{"n":"International Investment Summit (bilateral; general audience)","org":"MaRS","cat":"host","s":"2026-09-16","e":"2026-09-16","time":"Full day","loc":"Toronto, ON","city":"Toronto","sc":"International","ser":"Standalone","src":"Hosting/Attending"},{"n":"Dilutive funding session","org":"MaRS","cat":"host","tbd":["2026-10"],"dl":"Late October 2026","loc":"Toronto, ON","city":"Toronto","sc":"Provincial","ser":"Standalone","src":"Hosting/Attending"},{"n":"Monthly workshop series (6 months)","org":"MaRS","cat":"host","undated":true,"dl":"Monthly (ongoing)","loc":"Toronto, ON (in-person)","city":"Toronto","sc":"Provincial","ser":"Series","note":"Open to Medventions collaboration.","src":"Hosting/Attending"},{"n":"MaRS Impact Health (part of Toronto Health Innovation Week)","org":"MaRS","cat":"host","s":"2027-05-12","e":"2027-05-13","dl":"May 12 (eve) - 13, 2027 (disputed)","loc":"Toronto, ON","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending","flag":true},{"n":"Las Vegas health conference (likely HLTH) - MaRS + CABHI delegation","org":"MaRS","cat":"att","s":"2026-11-15","e":"2026-11-18","loc":"Las Vegas, USA","city":"Las Vegas","sc":"International","ser":"Standalone","note":"Likely HLTH (confirm); CABHI also interested.","src":"Hosting/Attending"},{"n":"Bloom Burton & Co. Health Investment Conference","org":"MaRS","cat":"att","s":"2027-05-11","e":"2027-05-12","dl":"May 11-12, 2027 (disputed)","loc":"Toronto, ON","city":"Toronto","sc":"National","ser":"Standalone","src":"Hosting/Attending","flag":true}];
+E.forEach(function(ev){orgC(ev.org);});
+
+var MONTHS=[];for(var y=2026,m=7,i=0;i<11;i++){MONTHS.push({y:y,m:m});m++;if(m>11){m=0;y++;}}
+var MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+var orgState={};ORDER.forEach(function(o){if(ORGS[o])orgState[o]=1;});
+var state={mi:1,cat:{host:1,att:1,int:1},org:orgState,sc:{Provincial:1,National:1,International:1},il:{"Very interested":1,"Interested":1,"Slightly interested":1,"Not interested":0}};
+function ilPass(ev){if(!ev.il)return true;return !!state.il[ev.il];}
+function pass(ev){if(!state.cat[ev.cat])return false;if(!state.org[ev.org])return false;if(!state.sc[ev.sc])return false;if(!ilPass(ev))return false;return true;}
+function iso(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");}
+function fmt(s){var p=s.split("-");return MN[+p[1]-1]+" "+(+p[2])+", "+p[0];}
+function catName(c){return c==="host"?"Hosting":c==="att"?"Attending":"Event of interest";}
+function esc(t){return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function dimmed(ev){return ev.il==="Not interested";}
+function styleEv(b,ev){var c=orgC(ev.org);b.style.background=dimmed(ev)?"#F1EFE8":c.bg;b.style.borderLeftColor=c.main;b.style.color=dimmed(ev)?"#444441":c.text;}
+
+function buildFilters(){
+  var f=document.getElementById("filters");f.innerHTML="";
+  function group(label,items){
+    var g=document.createElement("div");g.className="fgroup";g.innerHTML='<span class="flabel">'+label+'</span>';
+    items.forEach(function(it){
+      var b=document.createElement("button");b.className="chip"+(state[it.f][it.v]?" on":"");
+      b.style.setProperty("--chipc",it.c||"#5F5E5A");b.textContent=it.t;
+      b.onclick=function(){state[it.f][it.v]=state[it.f][it.v]?0:1;b.classList.toggle("on");renderAll();};
+      g.appendChild(b);
+    });
+    f.appendChild(g);
+  }
+  group("Organization",ORDER.filter(function(o){return ORGS[o];}).map(function(o){return{f:"org",v:o,t:o,c:orgC(o).main};}));
+  group("Category",[{f:"cat",v:"host",t:"Hosting"},{f:"cat",v:"att",t:"Attending"},{f:"cat",v:"int",t:"Of interest"}]);
+  group("Scale",[{f:"sc",v:"Provincial",t:"Provincial"},{f:"sc",v:"National",t:"National"},{f:"sc",v:"International",t:"International"}]);
+  group("Interest",[{f:"il",v:"Very interested",t:"Very",c:"#993C1D"},{f:"il",v:"Interested",t:"Interested",c:"#993C1D"},{f:"il",v:"Slightly interested",t:"Slightly",c:"#993C1D"},{f:"il",v:"Not interested",t:"Not interested",c:"#993C1D"}]);
+}
+function buildLegend(){
+  var l=document.getElementById("legend");l.innerHTML="";
+  ORDER.filter(function(o){return ORGS[o];}).forEach(function(o){
+    var s=document.createElement("span");s.className="lg";
+    s.innerHTML='<span class="sw" style="background:'+orgC(o).main+'"></span>'+esc(o);l.appendChild(s);
+  });
+  var sep=document.createElement("span");sep.style.color="#c9c8c2";sep.textContent="|";l.appendChild(sep);
+  [["solid","Hosting"],["double","Attending"],["dotted","Of interest"]].forEach(function(p){
+    var s=document.createElement("span");s.className="lg";
+    s.innerHTML='<span class="lgb" style="border-left-style:'+p[0]+'"></span>'+p[1];l.appendChild(s);
+  });
+}
+function renderCal(){
+  var mo=MONTHS[state.mi];
+  document.getElementById("mtitle").textContent=MN[mo.m]+" "+mo.y;
+  document.getElementById("prev").disabled=state.mi===0;
+  document.getElementById("next").disabled=state.mi===MONTHS.length-1;
+  var g=document.getElementById("grid");g.innerHTML="";
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(function(d){var el=document.createElement("div");el.className="dow";el.textContent=d;g.appendChild(el);});
+  var first=new Date(mo.y,mo.m,1).getDay(),nd=new Date(mo.y,mo.m+1,0).getDate(),shown={};
+  for(var b=0;b<first;b++){var bl=document.createElement("div");bl.className="day blank";g.appendChild(bl);}
+  for(var d=1;d<=nd;d++){
+    var cell=document.createElement("div");cell.className="day";var ds=iso(mo.y,mo.m,d);
+    cell.innerHTML='<div class="dnum">'+d+'</div>';
+    E.forEach(function(ev,idx){
+      if(!ev.s||!pass(ev))return;
+      if(ds>=ev.s&&ds<=ev.e){shown[idx]=1;
+        var b2=document.createElement("button");b2.className="ev cat-"+ev.cat;styleEv(b2,ev);
+        b2.textContent=(ds!==ev.s?"… ":"")+(ev.flag?"⚠ ":"")+ev.n;b2.title=ev.n+" ("+ev.org+")";
+        b2.onclick=function(){openModal(idx);};cell.appendChild(b2);}
+    });
+    g.appendChild(cell);
+  }
+  var key=mo.y+"-"+String(mo.m+1).padStart(2,"0");
+  var tray=document.getElementById("tray");tray.innerHTML="";var tn=0;
+  E.forEach(function(ev,idx){
+    if(ev.tbd&&ev.tbd.indexOf(key)>-1&&pass(ev)){
+      if(tn===0)tray.innerHTML='<h3>Date not yet confirmed this month</h3>';
+      var b3=document.createElement("button");b3.className="ev cat-"+ev.cat;styleEv(b3,ev);b3.textContent=(ev.flag?"⚠ ":"")+ev.n;b3.onclick=function(){openModal(idx);};tray.appendChild(b3);tn++;shown[idx]=1;}
+  });
+  tray.style.display=tn?"block":"none";
+  var un=document.getElementById("undated");un.innerHTML="";var unN=0;
+  if(state.mi===0){
+    E.forEach(function(ev,idx){
+      if(ev.undated&&pass(ev)){
+        if(unN===0)un.innerHTML='<h3>No date / recurring (shown once, on the first month)</h3>';
+        var b4=document.createElement("button");b4.className="ev cat-"+ev.cat;styleEv(b4,ev);b4.textContent=ev.n+" — "+(ev.dl||"");b4.onclick=function(){openModal(idx);};un.appendChild(b4);unN++;}
+    });
+  }
+  un.style.display=unN?"block":"none";
+  var c=Object.keys(shown).length;
+  document.getElementById("count").textContent=c+" event"+(c===1?"":"s")+" shown in "+MN[mo.m]+" "+mo.y;
+}
+function openModal(idx){
+  var ev=E[idx],c=orgC(ev.org);
+  var dt=ev.dl?ev.dl:(ev.s===ev.e?fmt(ev.s):fmt(ev.s)+" - "+fmt(ev.e));
+  var h='<button class="xbtn" onclick="closeModal()">&times;</button><h2>'+esc(ev.n)+'</h2>';
+  h+='<span class="badge" style="background:'+c.main+';color:#fff">'+esc(ev.org)+'</span>';
+  h+='<span class="badge" style="background:'+c.bg+';color:'+c.text+'">'+catName(ev.cat)+'</span>';
+  if(ev.il)h+='<span class="badge" style="background:#F1EFE8;color:#444441">'+esc(ev.il)+'</span>';
+  h+='<table>';
+  h+='<tr><td>Date</td><td>'+esc(dt)+'</td></tr>';
+  if(ev.time)h+='<tr><td>Time / duration</td><td>'+esc(ev.time)+'</td></tr>';
+  h+='<tr><td>Location</td><td>'+esc(ev.loc)+'</td></tr>';
+  h+='<tr><td>Scale</td><td>'+esc(ev.sc)+'</td></tr>';
+  h+='<tr><td>Series / standalone</td><td>'+esc(ev.ser)+'</td></tr>';
+  h+='<tr><td>Source sheet</td><td>'+esc(ev.src)+'</td></tr>';
+  h+='</table>';
+  if(ev.note)h+='<div class="note">'+esc(ev.note)+'</div>';
+  if(ev.flag)h+='<div class="flagn">⚠ Source data has a date or location discrepancy — verify before relying on this entry.</div>';
+  document.getElementById("modal").innerHTML=h;
+  document.getElementById("modalbg").classList.add("open");
+}
+function closeModal(){document.getElementById("modalbg").classList.remove("open");}
+document.getElementById("modalbg").onclick=function(e){if(e.target===this)closeModal();};
+document.getElementById("prev").onclick=function(){if(state.mi>0){state.mi--;renderCal();}};
+document.getElementById("next").onclick=function(){if(state.mi<MONTHS.length-1){state.mi++;renderCal();}};
+document.getElementById("reset-filters").onclick=function(){
+  Object.keys(state.org).forEach(function(o){state.org[o]=1;});
+  state.cat={host:1,att:1,int:1};state.sc={Provincial:1,National:1,International:1};
+  state.il={"Very interested":1,"Interested":1,"Slightly interested":1,"Not interested":0};
+  buildFilters();renderAll();
+};
+document.getElementById("only-canada").onclick=function(){setTab("map");};
+
+var world=null,mapReady=false;
+var W={},CA={};
+function setupPanel(svgId,cfg){
+  var svg=d3.select("#"+svgId);
+  var g=svg.append("g");
+  var zoom=d3.zoom().scaleExtent([1,10]).on("zoom",function(ev2){g.attr("transform",ev2.transform);});
+  svg.call(zoom);
+  cfg.svg=svg;cfg.g=g;cfg.landG=g.append("g");cfg.circG=g.append("g");
+}
+function drawLand(cfg){
+  var path=d3.geoPath(cfg.proj);
+  cfg.landG.selectAll("path").remove();
+  cfg.landG.selectAll("path").data(world.features).enter().append("path")
+    .attr("d",path).attr("fill","#ECEAE3").attr("stroke","#D3D1C7").attr("stroke-width",0.5);
+}
+function initMaps(){
+  W.proj=d3.geoNaturalEarth1();
+  CA.proj=d3.geoConicConformal().rotate([96,0]).center([0,62]).parallels([49,77]);
+  setupPanel("mapsvg",W);setupPanel("mapsvg-ca",CA);
+  d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(function(w){
+    world=topojson.feature(w,w.objects.countries);
+    W.proj.fitExtent([[6,6],[634,374]],{type:"Sphere"});
+    var caPts={type:"MultiPoint",coordinates:Object.keys(CITY).filter(function(k){return CITY[k][2];}).map(function(k){return [CITY[k][1],CITY[k][0]];})};
+    CA.proj.fitExtent([[10,10],[410,370]],caPts);
+    drawLand(W);drawLand(CA);
+    mapReady=true;renderMaps();
+  }).catch(function(){document.getElementById("mapnote").textContent="Map data could not be loaded (needs internet access to cdn.jsdelivr.net).";});
+}
+function renderPanel(cfg,onlyCanada){
+  var byCity={},virt=0;
+  E.forEach(function(ev,idx){
+    if(!pass(ev))return;
+    if(!ev.city){if(!onlyCanada)virt++;return;}
+    if(onlyCanada&&!CITY[ev.city][2])return;
+    (byCity[ev.city]=byCity[ev.city]||{n:ev.city,events:[]}).events.push(idx);
+  });
+  var data=Object.values(byCity).filter(function(c2){return CITY[c2.n];});
+  data.forEach(function(c2){var ll=CITY[c2.n],xy=cfg.proj([ll[1],ll[0]]);c2.r=Math.max(5,4*Math.sqrt(c2.events.length));c2.x0=xy[0];c2.y0=xy[1];c2.x=xy[0];c2.y=xy[1];});
+  var sim=d3.forceSimulation(data).force("x",d3.forceX(function(d){return d.x0;}).strength(0.6)).force("y",d3.forceY(function(d){return d.y0;}).strength(0.6)).force("collide",d3.forceCollide(function(d){return d.r+4;}).iterations(5)).stop();
+  for(var t=0;t<220;t++)sim.tick();
+  var g=cfg.circG;g.selectAll("*").remove();
+  data.forEach(function(c2){
+    if(Math.abs(c2.x-c2.x0)>1.5||Math.abs(c2.y-c2.y0)>1.5){
+      g.append("line").attr("x1",c2.x0).attr("y1",c2.y0).attr("x2",c2.x).attr("y2",c2.y).attr("stroke","#888780").attr("stroke-width",0.6);
+      g.append("circle").attr("cx",c2.x0).attr("cy",c2.y0).attr("r",1.3).attr("fill","#5F5E5A");
+    }
+  });
+  data.sort(function(a,b){return b.events.length-a.events.length;}).forEach(function(c2){
+    var r=c2.r;
+    var gg=g.append("g").style("cursor","pointer").attr("transform","translate("+c2.x+","+c2.y+")").on("click",function(){showCity(c2);});
+    gg.append("circle").attr("r",r).attr("fill","#534AB7").attr("fill-opacity",0.7).attr("stroke","#3C3489").attr("stroke-width",0.9);
+    gg.append("text").attr("text-anchor","middle").attr("dy","0.35em").attr("font-size",Math.max(8,Math.min(12,r*0.85))).attr("fill","#fff").attr("font-weight","600").text(c2.events.length);
+    gg.append("text").attr("text-anchor","middle").attr("y",r+9).attr("font-size",8.5).attr("fill","#444441").style("paint-order","stroke").style("stroke","#f7f6f2").style("stroke-width","3px").text(c2.n);
+    gg.append("title").text(c2.n+": "+c2.events.length+" event(s)");
+  });
+  return virt;
+}
+function renderMaps(){
+  if(!mapReady)return;
+  var virt=renderPanel(W,false);
+  renderPanel(CA,true);
+  document.getElementById("mapnote").textContent="Circle area is proportional to the number of events in each city (current filters applied). Crowded circles are nudged apart; a line + dot marks the true location. Scroll to zoom, drag to pan, click a circle for the event list. The Canada inset shows only Canadian cities."+(virt?" "+virt+" virtual/no-location event(s) are not on the map.":"");
+}
+function showCity(c2){
+  var p=document.getElementById("citypanel");
+  var h='<h3>'+esc(c2.n)+' ('+c2.events.length+' event'+(c2.events.length===1?"":"s")+')</h3>';
+  c2.events.slice().sort(function(a,b){return (E[a].s||E[a].dl||"~")<(E[b].s||E[b].dl||"~")?-1:1;}).forEach(function(idx){
+    var ev=E[idx],c=orgC(ev.org);
+    var dt=ev.dl?ev.dl:(ev.s===ev.e?fmt(ev.s):fmt(ev.s)+" - "+fmt(ev.e));
+    h+='<div class="cityev"><span class="dtag">'+esc(dt)+'</span><span class="obadge" style="background:'+c.main+'">'+esc(ev.org)+'</span><button style="border:none;background:none;color:'+c.text+';text-decoration:underline;padding:0;font-size:13px;text-align:left" onclick="openModal('+idx+')">'+esc(ev.n)+'</button><span style="color:#5f6065;font-size:12px">'+catName(ev.cat)+'</span></div>';
+  });
+  p.innerHTML=h;p.style.display="block";
+}
+function setTab(t){
+  document.getElementById("tab-cal").classList.toggle("on",t==="cal");
+  document.getElementById("tab-map").classList.toggle("on",t==="map");
+  document.getElementById("view-cal").style.display=t==="cal"?"block":"none";
+  document.getElementById("view-map").style.display=t==="map"?"block":"none";
+  if(t==="map"){if(!mapReady&&!world)initMaps();else renderMaps();}
+}
+document.getElementById("tab-cal").onclick=function(){setTab("cal");};
+document.getElementById("tab-map").onclick=function(){setTab("map");};
+function renderAll(){renderCal();if(mapReady)renderMaps();}
+buildFilters();buildLegend();renderCal();
+</script>
+</body>
+</html>
