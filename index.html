@@ -166,9 +166,11 @@ function rowHA(r){var g=_mkGet(r);var n=g("event name"),org=g("organization");if
   var loc=g("location");
   var e={n:n,org:org,cat:_mapCat(g("hosting or attending")),loc:loc,
     sc:_normScale(g("scale")),ser:_normSeries(g("series")),city:_deriveCity(loc),src:"Hosting/Attending"};
-  var ty=g("type");if(ty)e.type=ty;
+  var ty=g("type");if(ty){var tarr=ty.split(",").map(function(s){return s.replace(/\s+/g," ").trim();}).filter(Boolean);if(tarr.length)e.types=tarr;}
   var tm=g("time");if(tm)e.time=tm;
-  var an=g("anchor");if(!an)an=g("embargoed");if(an&&!/^(no|n|-|n\/a)$/i.test(an))e.note=an;
+  var an=g("anchor");if(!an)an=g("embargoed");
+  if(/embargo/i.test(an))return null; /* embargoed events are never displayed */
+  if(an&&!/^(no|n|-|n\/a)$/i.test(an))e.note=an;
   var w=parseWhen(g("date"));for(var k in w)e[k]=w[k];return e;}
 function rowINT(r){var g=_mkGet(r);var n=g("event name"),org=g("organization");if(!n||!org)return null;
   var loc=g("location");
@@ -182,7 +184,7 @@ function setStatus(mode,msg){var s=document.getElementById("datastatus");if(!s)r
   s.style.background=col[0];s.style.color=col[1];}
 function boot(evts,mode,msg){E.length=0;evts.forEach(function(e){if(e&&e.n&&e.org){E.push(e);orgC(e.org);}});
   ORDER.forEach(function(o){if(ORGS[o]&&state.org[o]===undefined)state.org[o]=1;});
-  E.forEach(function(e){if(e.type&&state.type[e.type]===undefined)state.type[e.type]=1;});
+  E.forEach(function(e){if(e.types)e.types.forEach(function(tp){if(state.type[tp]===undefined)state.type[tp]=1;});});
   setStatus(mode,msg);buildFilters();buildLegend();renderCal();if(typeof ready!=="undefined"&&ready)renderMaps();}
 function _fetchCsv(url,mapper){return new Promise(function(resolve){
   if(!url){resolve([]);return;}
@@ -206,7 +208,7 @@ var MN=["January","February","March","April","May","June","July","August","Septe
 var orgState={};ORDER.forEach(function(o){if(ORGS[o])orgState[o]=1;});
 var state={mi:1,cat:{host:1,att:1,int:1},org:orgState,type:{},sc:{Provincial:1,National:1,International:1},il:{"Very interested":1,"Interested":1,"Slightly interested":1,"Not interested":0}};
 function ilPass(ev){if(!ev.il)return true;return !!state.il[ev.il];}
-function typePass(ev){if(!ev.type)return true;return !!state.type[ev.type];}
+function typePass(ev){if(!ev.types||!ev.types.length)return true;for(var i=0;i<ev.types.length;i++){if(state.type[ev.types[i]])return true;}return false;}
 function pass(ev){if(!state.cat[ev.cat])return false;if(!state.org[ev.org])return false;if(!typePass(ev))return false;if(!state.sc[ev.sc])return false;if(!ilPass(ev))return false;return true;}
 function iso(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");}
 function fmt(s){var p=s.split("-");return MN[+p[1]-1]+" "+(+p[2])+", "+p[0];}
@@ -229,7 +231,7 @@ function buildFilters(){
   }
   group("Organization",ORDER.filter(function(o){return ORGS[o];}).map(function(o){return{f:"org",v:o,t:o,c:orgC(o).main};}));
   group("Category",[{f:"cat",v:"host",t:"Hosting"},{f:"cat",v:"att",t:"Attending"},{f:"cat",v:"int",t:"Of interest"}]);
-  var types=[];E.forEach(function(e){if(e.type&&types.indexOf(e.type)<0)types.push(e.type);});
+  var types=[];E.forEach(function(e){if(e.types)e.types.forEach(function(tp){if(types.indexOf(tp)<0)types.push(tp);});});
   if(types.length)group("Type",types.map(function(t){return{f:"type",v:t,t:t,c:"#5F5E5A"};}));
   group("Scale",[{f:"sc",v:"Provincial",t:"Provincial"},{f:"sc",v:"National",t:"National"},{f:"sc",v:"International",t:"International"}]);
   group("Interest",[{f:"il",v:"Very interested",t:"Very",c:"#993C1D"},{f:"il",v:"Interested",t:"Interested",c:"#993C1D"},{f:"il",v:"Slightly interested",t:"Slightly",c:"#993C1D"},{f:"il",v:"Not interested",t:"Not interested",c:"#993C1D"}]);
@@ -328,7 +330,7 @@ function openModal(idx){
   if(ev.il)h+='<span class="badge" style="background:#F1EFE8;color:#444441">'+esc(ev.il)+'</span>';
   h+='<table>';
   h+='<tr><td>Date</td><td>'+esc(dt)+'</td></tr>';
-  if(ev.type)h+='<tr><td>Type</td><td>'+esc(ev.type)+'</td></tr>';
+  if(ev.types)h+='<tr><td>Type</td><td>'+esc(ev.types.join(", "))+'</td></tr>';
   if(ev.time)h+='<tr><td>Time / duration</td><td>'+esc(ev.time)+'</td></tr>';
   h+='<tr><td>Location</td><td>'+esc(ev.loc)+'</td></tr>';
   h+='<tr><td>Scale</td><td>'+esc(ev.sc)+'</td></tr>';
